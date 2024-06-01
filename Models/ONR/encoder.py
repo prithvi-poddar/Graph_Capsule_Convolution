@@ -52,3 +52,45 @@ class Task_Graph_Encoder(nn.Module):
         x_caps = self.batch_norm(x_caps)
         x = self.final_activation(self.linear2(x_caps))
         return x
+    
+class Context_Encoder(nn.Module):
+    def __init__(self, 
+                 in_feats = 8,
+                 out_feats = 128,
+                 hidden_dims=[32,64],
+                 device=torch.device("cuda" if torch.cuda.is_available() else "cpu")):
+        super(Context_Encoder, self).__init__()
+        self.agent_linear1 = nn.Linear(in_features=in_feats,
+                                       out_features=hidden_dims[0])
+        self.agent_linear2 = nn.Linear(in_features=hidden_dims[0],
+                                       out_features=hidden_dims[1])
+        self.linear1 = nn.Linear(in_features=in_feats,
+                                 out_features=hidden_dims[0])
+        self.linear2 = nn.Linear(in_features=hidden_dims[0],
+                                 out_features=hidden_dims[1])
+        self.context = nn.Linear(in_features=hidden_dims[1]*2+1,
+                                 out_features=out_feats)
+        self.activation = nn.ReLU()
+        self.device = device
+        self.to(device)
+
+    def forward(self, agent, peers, time):
+        ag_x = self.activation(self.agent_linear1(agent))
+        ag_x_1 = self.activation(self.agent_linear2(ag_x))
+        # skip connection
+        if  ag_x_1.dim() == 2:
+            ag_x_2 = ag_x.repeat(1,int(ag_x_1.shape[1]/ag_x.shape[1])) + ag_x_1
+        elif ag_x_1.dim() == 3:
+            ag_x_2 = ag_x.repeat(1,1,int(ag_x_1.shape[2]/ag_x.shape[2])) + ag_x_1
+        
+        peer_x = self.activation(self.linear1(peers))
+        peer_x_1 = self.activation(self.linear2(peer_x))
+        # skip connection
+        if  peer_x_1.dim() == 2:
+            peer_x_2 = peer_x.repeat(1,int(peer_x_1.shape[1]/peer_x.shape[1])) + peer_x_1
+        elif peer_x_1.dim() == 3:
+            peer_x_2 = peer_x.repeat(1,1,int(peer_x_1.shape[2]/peer_x.shape[2])) + peer_x_1
+        # TODO: Potential failure point
+        peer_x_2 = torch.sum(peer_x_2, dim=0, keepdim=True)
+        x = self.activation(self.context(torch.cat((time, ag_x_2, peer_x_2), dim=1)))
+        return x

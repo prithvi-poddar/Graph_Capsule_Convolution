@@ -53,11 +53,39 @@ class Laplacian_GCN(nn.Module):
         X_sum = torch.zeros((X.shape[0], self.__out_dim), device=self.device, requires_grad=True)
         for k in range(self.__k+1):
             X_sum = X_sum + self.weights[k](torch.matmul(torch.linalg.matrix_power(L,k),X))
-        return self.act(X_sum)   
+        return self.act(X_sum)  
+
+class Edge_Laplacian_GCN(nn.Module):
+    def __init__(self, input_dim, edge_input_dim, output_dim, k, activation=nn.ReLU(), device=torch.device("cuda" if torch.cuda.is_available() else "cpu")):
+        super(Edge_Laplacian_GCN, self).__init__()
+        self.__in_dim = input_dim
+        self.__edge_in_dim = edge_input_dim
+        self.__out_dim = output_dim
+
+        assert output_dim%edge_input_dim == 0, "output dim not divisible by edge input dim"
+
+        self.__k = k
+        self.act = activation
+        self.device = device
+
+        self.nets = [Laplacian_GCN(input_dim=self.__in_dim, output_dim=int(self.__out_dim/self.__edge_in_dim), k=self.__k, activation=self.act, device=self.device) for i in range(self.__edge_in_dim)]
+        # self.weights = nn.ModuleList([nn.Linear(self.__in_dim, self.__out_dim) for i in range(self.__k+1)])
+        self.to(device)
+    
+    def forward(self, data=None, X=None, L=None):
+        if X == None:
+            X = data.x
+            L = get_laplacian(data.edge_index)
+        E = [L[:,:,i] for i in range(L.shape[2])]
+        x = []
+        for idx, net in enumerate(self.nets):
+            x.append(net(X=X, L=E[idx]))
+        X_final = torch.cat(x, axis=1)
+        return X_final  
     
 class Primary_Capsule(nn.Module):
     #TODO: Do we take the statistical moments in the first layer?
-    def __init__(self, input_dim, output_dim, gcn_model='Laplacian', p=3, device=torch.device("cuda" if torch.cuda.is_available() else "cpu"), **kwargs):
+    def __init__(self, input_dim, output_dim, gcn_model='Edge_Laplacian', p=3, device=torch.device("cuda" if torch.cuda.is_available() else "cpu"), **kwargs):
         super(Primary_Capsule, self).__init__()
         self.__in_dim = input_dim
         self.__out_dim = output_dim
@@ -67,6 +95,11 @@ class Primary_Capsule(nn.Module):
             k = kwargs['k']
             activation = kwargs['activation']
             self.nets = nn.ModuleList([Laplacian_GCN(input_dim=self.__in_dim, output_dim=self.__out_dim, k=k, activation=activation) for i in range(self.p)])
+        elif gcn_model == 'Edge_Laplacian':
+            k = kwargs['k']
+            activation = kwargs['activation']
+            edge_feat_dim = kwargs['edge_feat_dim']
+            self.nets = nn.ModuleList([Edge_Laplacian_GCN(input_dim=self.__in_dim, edge_input_dim=edge_feat_dim, output_dim=self.__out_dim, k=k, activation=activation) for i in range(self.p)])
         self.device = device
 
     def forward(self, data=None, X=None, L=None):
@@ -81,7 +114,7 @@ class Primary_Capsule(nn.Module):
         return self.activation(output)
     
 class Secondary_Capsule(nn.Module):
-    def __init__(self, input_dim, output_dim, gcn_model='Laplacian', p=3, device=torch.device("cuda" if torch.cuda.is_available() else "cpu"), **kwargs):
+    def __init__(self, input_dim, output_dim, gcn_model='Edge_Laplacian', p=3, device=torch.device("cuda" if torch.cuda.is_available() else "cpu"), **kwargs):
         super(Secondary_Capsule, self).__init__()
         self.__in_dim = input_dim
         self.__out_dim = output_dim
@@ -91,6 +124,11 @@ class Secondary_Capsule(nn.Module):
             k = kwargs['k']
             activation = kwargs['activation']
             self.nets = nn.ModuleList([Laplacian_GCN(input_dim=self.__in_dim, output_dim=self.__out_dim, k=k, activation=activation) for i in range(self.p)])
+        elif gcn_model == 'Edge_Laplacian':
+            k = kwargs['k']
+            activation = kwargs['activation']
+            edge_feat_dim = kwargs['edge_feat_dim']
+            self.nets = nn.ModuleList([Edge_Laplacian_GCN(input_dim=self.__in_dim, edge_input_dim=edge_feat_dim, output_dim=self.__out_dim, k=k, activation=activation) for i in range(self.p)])
         self.device = device
         
     def forward(self, data=None, X=None, L=None):

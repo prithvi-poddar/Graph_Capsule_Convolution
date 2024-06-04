@@ -21,11 +21,14 @@ class MHA_Decoder(nn.Module):
         self.batchnorm1 = nn.BatchNorm1d(num_features=context_dim, affine=False)
         self.linear1 = nn.Linear(in_features=context_dim,
                                  out_features=hidden_dim[0])
+        nn.init.xavier_uniform_(self.linear1.weight.data)
         self.linear2 = nn.Linear(in_features=hidden_dim[0],
                                  out_features=hidden_dim[1])
+        nn.init.xavier_uniform_(self.linear2.weight.data)
         self.batchnorm2 = nn.BatchNorm1d(num_features=hidden_dim[1], affine=False)
         self.linear3 = nn.Linear(in_features=hidden_dim[1],
                                  out_features=out_feats)
+        nn.init.xavier_uniform_(self.linear3.weight.data)
         self.activation = nn.ReLU()
         self.softmax = nn.Softmax(dim=-1)
         self.device = device

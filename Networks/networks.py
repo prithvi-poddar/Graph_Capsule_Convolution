@@ -43,6 +43,8 @@ class Laplacian_GCN(nn.Module):
         self.__k = k
         self.act = activation
         self.weights = nn.ModuleList([nn.Linear(self.__in_dim, self.__out_dim) for i in range(self.__k+1)])
+        for idx, net in enumerate(self.weights):
+            nn.init.xavier_uniform_(net.weight.data)
         self.device = device
         self.to(device)
     

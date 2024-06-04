@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 import numpy as np
-from Networks.networks import *
-from Networks.utils import *
+from Graph_Capsule_Convolution.Networks.networks import *
+from Graph_Capsule_Convolution.Networks.utils import *
 
 class MHA_Decoder(nn.Module):
     def __init__(self,
@@ -16,7 +16,6 @@ class MHA_Decoder(nn.Module):
         super(MHA_Decoder, self).__init__()
         self.mha = nn.MultiheadAttention(embed_dim=context_dim,
                                          num_heads=num_heads,
-                                         dropout=0.2,
                                          kdim=key_dim,
                                          vdim=value_dim)
         self.batchnorm1 = nn.BatchNorm1d(num_features=context_dim, affine=False)

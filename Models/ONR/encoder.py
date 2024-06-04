@@ -1,8 +1,10 @@
 import torch
 import torch.nn as nn
 import numpy as np
-from Networks.networks import *
-from Networks.utils import *
+from Graph_Capsule_Convolution.Networks.networks import *
+from Graph_Capsule_Convolution.Networks.utils import *
+# from Networks.networks import *
+# from Networks.utils import *
 
 class Task_Graph_Encoder(nn.Module):
     def __init__(self, 

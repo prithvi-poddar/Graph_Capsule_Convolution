@@ -93,17 +93,18 @@ class Primary_Capsule(nn.Module):
         self.__out_dim = output_dim
         self.p = p
         self.activation = kwargs['activation']
+        self.device = device
         if gcn_model == 'Laplacian':
             k = kwargs['k']
             activation = kwargs['activation']
-            self.nets = nn.ModuleList([Laplacian_GCN(input_dim=self.__in_dim, output_dim=self.__out_dim, k=k, activation=activation) for i in range(self.p)])
+            self.nets = nn.ModuleList([Laplacian_GCN(input_dim=self.__in_dim, output_dim=self.__out_dim, k=k, activation=activation, device=self.device) for i in range(self.p)])
         elif gcn_model == 'Edge_Laplacian':
             k = kwargs['k']
             activation = kwargs['activation']
             edge_feat_dim = kwargs['edge_feat_dim']
-            self.nets = nn.ModuleList([Edge_Laplacian_GCN(input_dim=self.__in_dim, edge_input_dim=edge_feat_dim, output_dim=self.__out_dim, k=k, activation=activation) for i in range(self.p)])
+            self.nets = nn.ModuleList([Edge_Laplacian_GCN(input_dim=self.__in_dim, edge_input_dim=edge_feat_dim, output_dim=self.__out_dim, k=k, activation=activation, device=self.device) for i in range(self.p)])
         self.batchnorm = nn.BatchNorm1d(num_features=self.__out_dim*self.p)
-        self.device = device
+        
 
     def forward(self, data=None, X=None, L=None):
         if X == None:
@@ -123,17 +124,18 @@ class Secondary_Capsule(nn.Module):
         self.__out_dim = output_dim
         self.p = p
         self.activation = kwargs['activation']
+        self.device = device
         if gcn_model == 'Laplacian':
             k = kwargs['k']
             activation = kwargs['activation']
-            self.nets = nn.ModuleList([Laplacian_GCN(input_dim=self.__in_dim, output_dim=self.__out_dim, k=k, activation=activation) for i in range(self.p)])
+            self.nets = nn.ModuleList([Laplacian_GCN(input_dim=self.__in_dim, output_dim=self.__out_dim, k=k, activation=activation, device=self.device) for i in range(self.p)])
         elif gcn_model == 'Edge_Laplacian':
             k = kwargs['k']
             activation = kwargs['activation']
             edge_feat_dim = kwargs['edge_feat_dim']
-            self.nets = nn.ModuleList([Edge_Laplacian_GCN(input_dim=self.__in_dim, edge_input_dim=edge_feat_dim, output_dim=self.__out_dim, k=k, activation=activation) for i in range(self.p)])
+            self.nets = nn.ModuleList([Edge_Laplacian_GCN(input_dim=self.__in_dim, edge_input_dim=edge_feat_dim, output_dim=self.__out_dim, k=k, activation=activation, device=self.device) for i in range(self.p)])
         self.batchnorm = nn.BatchNorm1d(num_features=self.__out_dim*self.p)
-        self.device = device
+        
         
     def forward(self, data=None, X=None, L=None):
         if X == None:

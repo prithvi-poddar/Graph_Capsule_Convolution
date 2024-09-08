@@ -18,14 +18,14 @@ class MHA_Decoder(nn.Module):
                                          num_heads=num_heads,
                                          kdim=key_dim,
                                          vdim=value_dim)
-        self.batchnorm1 = nn.BatchNorm1d(num_features=context_dim, affine=False)
+        self.layernorm1 = nn.LayerNorm(normalized_shape=context_dim)# nn.BatchNorm1d(num_features=context_dim, affine=False)
         self.linear1 = nn.Linear(in_features=context_dim,
                                  out_features=hidden_dim[0])
         nn.init.xavier_uniform_(self.linear1.weight.data)
         self.linear2 = nn.Linear(in_features=hidden_dim[0],
                                  out_features=hidden_dim[1])
         nn.init.xavier_uniform_(self.linear2.weight.data)
-        self.batchnorm2 = nn.BatchNorm1d(num_features=hidden_dim[1], affine=False)
+        self.layernorm2 = nn.LayerNorm(normalized_shape=hidden_dim[1])# nn.BatchNorm1d(num_features=hidden_dim[1], affine=False)
         self.linear3 = nn.Linear(in_features=hidden_dim[1],
                                  out_features=out_feats)
         nn.init.xavier_uniform_(self.linear3.weight.data)
@@ -36,9 +36,9 @@ class MHA_Decoder(nn.Module):
 
     def forward(self, context, key, value):
         x, _ = self.mha(context, key, value, need_weights=False)
-        # x = self.batchnorm1(x)
+        x = self.layernorm1(x)
         x = self.activation(self.linear1(x))
         x = self.activation(self.linear2(x))
-        # x = self.batchnorm2(x)
+        # x = self.layernorm2(x)
         probs = self.softmax(self.linear3(x))
         return probs

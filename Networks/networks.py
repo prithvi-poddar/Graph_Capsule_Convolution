@@ -102,6 +102,7 @@ class Primary_Capsule(nn.Module):
             activation = kwargs['activation']
             edge_feat_dim = kwargs['edge_feat_dim']
             self.nets = nn.ModuleList([Edge_Laplacian_GCN(input_dim=self.__in_dim, edge_input_dim=edge_feat_dim, output_dim=self.__out_dim, k=k, activation=activation) for i in range(self.p)])
+        self.batchnorm = nn.BatchNorm1d(num_features=self.__out_dim*self.p)
         self.device = device
 
     def forward(self, data=None, X=None, L=None):
@@ -112,7 +113,7 @@ class Primary_Capsule(nn.Module):
         for idx, net in enumerate(self.nets):
             outs.append(net(X=X, L=L))
         output = torch.stack(outs, -1)
-        output = torch.flatten(output, -2, -1)
+        output = self.batchnorm(torch.flatten(output, -2, -1))
         return self.activation(output)
     
 class Secondary_Capsule(nn.Module):
@@ -131,6 +132,7 @@ class Secondary_Capsule(nn.Module):
             activation = kwargs['activation']
             edge_feat_dim = kwargs['edge_feat_dim']
             self.nets = nn.ModuleList([Edge_Laplacian_GCN(input_dim=self.__in_dim, edge_input_dim=edge_feat_dim, output_dim=self.__out_dim, k=k, activation=activation) for i in range(self.p)])
+        self.batchnorm = nn.BatchNorm1d(num_features=self.__out_dim*self.p)
         self.device = device
         
     def forward(self, data=None, X=None, L=None):
@@ -144,5 +146,5 @@ class Secondary_Capsule(nn.Module):
         for idx, net in enumerate(self.nets):
             outs.append(net(X=X_moments, L=L))
         output = torch.stack(outs, -1)
-        output = torch.flatten(output, -2, -1)
+        output = self.batchnorm(torch.flatten(output, -2, -1))
         return self.activation(output)

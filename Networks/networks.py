@@ -52,9 +52,16 @@ class Laplacian_GCN(nn.Module):
         if X == None:
             X = data.x
             L = get_laplacian(data.edge_index)
-        X_sum = torch.zeros((X.shape[0], self.__out_dim), device=self.device, requires_grad=True)
-        for k in range(self.__k+1):
-            X_sum = X_sum + self.weights[k](torch.matmul(torch.linalg.matrix_power(L,k),X))
+        batch_size, num_nodes, num_features = X.shape
+
+        if len(L.shape) == 4:
+            L = L.squeeze(0)
+
+        X_sum = torch.zeros((batch_size, num_nodes, self.__out_dim), device=self.device)
+        for k in range(self.__k + 1):
+            L_power_k_X = torch.matmul(torch.linalg.matrix_power(L, k), X)
+            
+            X_sum += self.weights[k](L_power_k_X)
         return self.act(X_sum)  
 
 class Edge_Laplacian_GCN(nn.Module):
@@ -103,7 +110,8 @@ class Primary_Capsule(nn.Module):
             activation = kwargs['activation']
             edge_feat_dim = kwargs['edge_feat_dim']
             self.nets = nn.ModuleList([Edge_Laplacian_GCN(input_dim=self.__in_dim, edge_input_dim=edge_feat_dim, output_dim=self.__out_dim, k=k, activation=activation, device=self.device) for i in range(self.p)])
-        self.batchnorm = nn.BatchNorm1d(num_features=self.__out_dim*self.p)
+        # self.batchnorm = nn.BatchNorm1d(num_features=self.__out_dim*self.p)
+        self.batchnorm = nn.BatchNorm1d(num_features=100)
         
 
     def forward(self, data=None, X=None, L=None):
@@ -114,7 +122,7 @@ class Primary_Capsule(nn.Module):
         for idx, net in enumerate(self.nets):
             outs.append(net(X=X, L=L))
         output = torch.stack(outs, -1)
-        output = self.batchnorm(torch.flatten(output, -2, -1))
+        output = torch.flatten(output, start_dim=-2, end_dim=-1) #self.batchnorm(torch.flatten(output, -2, -1))
         return self.activation(output)
     
 class Secondary_Capsule(nn.Module):
@@ -134,7 +142,8 @@ class Secondary_Capsule(nn.Module):
             activation = kwargs['activation']
             edge_feat_dim = kwargs['edge_feat_dim']
             self.nets = nn.ModuleList([Edge_Laplacian_GCN(input_dim=self.__in_dim, edge_input_dim=edge_feat_dim, output_dim=self.__out_dim, k=k, activation=activation, device=self.device) for i in range(self.p)])
-        self.batchnorm = nn.BatchNorm1d(num_features=self.__out_dim*self.p)
+        # self.batchnorm = nn.BatchNorm1d(num_features=self.__out_dim*self.p)
+        self.batchnorm = nn.BatchNorm1d(num_features=100)
         
         
     def forward(self, data=None, X=None, L=None):
@@ -148,5 +157,5 @@ class Secondary_Capsule(nn.Module):
         for idx, net in enumerate(self.nets):
             outs.append(net(X=X_moments, L=L))
         output = torch.stack(outs, -1)
-        output = self.batchnorm(torch.flatten(output, -2, -1))
+        output = torch.flatten(output, start_dim=-2, end_dim=-1) #self.batchnorm(torch.flatten(output, -2, -1))
         return self.activation(output)

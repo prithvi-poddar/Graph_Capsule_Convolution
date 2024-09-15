@@ -17,28 +17,46 @@ class MHA_Decoder(nn.Module):
         self.mha = nn.MultiheadAttention(embed_dim=context_dim,
                                          num_heads=num_heads,
                                          kdim=key_dim,
-                                         vdim=value_dim)
+                                         vdim=value_dim,
+                                         batch_first=True)
         self.layernorm1 = nn.LayerNorm(normalized_shape=context_dim)# nn.BatchNorm1d(num_features=context_dim, affine=False)
         self.linear1 = nn.Linear(in_features=context_dim,
                                  out_features=hidden_dim[0])
         nn.init.xavier_uniform_(self.linear1.weight.data)
         self.linear2 = nn.Linear(in_features=hidden_dim[0],
-                                 out_features=hidden_dim[1])
-        nn.init.xavier_uniform_(self.linear2.weight.data)
-        self.layernorm2 = nn.LayerNorm(normalized_shape=hidden_dim[1])# nn.BatchNorm1d(num_features=hidden_dim[1], affine=False)
-        self.linear3 = nn.Linear(in_features=hidden_dim[1],
                                  out_features=out_feats)
-        nn.init.xavier_uniform_(self.linear3.weight.data)
+        nn.init.xavier_uniform_(self.linear2.weight.data)
+        # self.layernorm2 = nn.LayerNorm(normalized_shape=hidden_dim[1])# nn.BatchNorm1d(num_features=hidden_dim[1], affine=False)
+        # self.linear3 = nn.Linear(in_features=hidden_dim[1],
+        #                          out_features=out_feats)
+        # nn.init.xavier_uniform_(self.linear3.weight.data)
+
+
+        # self.layernorm1 = nn.LayerNorm(normalized_shape=context_dim)# nn.BatchNorm1d(num_features=context_dim, affine=False)
+        # self.linear1 = nn.Linear(in_features=context_dim,
+        #                          out_features=out_feats)
+        # nn.init.xavier_uniform_(self.linear1.weight.data)
+        # self.linear2 = nn.Linear(in_features=hidden_dim[0],
+        #                          out_features=hidden_dim[1])
+        # nn.init.xavier_uniform_(self.linear2.weight.data)
+        # self.layernorm2 = nn.LayerNorm(normalized_shape=hidden_dim[1])# nn.BatchNorm1d(num_features=hidden_dim[1], affine=False)
+        # self.linear3 = nn.Linear(in_features=hidden_dim[1],
+        #                          out_features=out_feats)
+        # nn.init.xavier_uniform_(self.linear3.weight.data)
         self.activation = nn.ReLU()
         self.softmax = nn.Softmax(dim=-1)
         self.device = device
         self.to(device)
 
     def forward(self, context, key, value):
+        # if len(context.shape)==2:
+        #     key = key.squeeze(0)
+        #     value = value.squeeze(0)
         x, _ = self.mha(context, key, value, need_weights=False)
         x = self.layernorm1(x)
         x = self.activation(self.linear1(x))
+        # x = self.activation(self.linear1(x))
         x = self.activation(self.linear2(x))
-        # x = self.layernorm2(x)
-        probs = self.softmax(self.linear3(x))
-        return probs
+        # # x = self.layernorm2(x)
+        # probs = self.softmax(self.linear3(x))
+        return x #probs

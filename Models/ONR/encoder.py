@@ -18,7 +18,7 @@ class Task_Graph_Encoder(nn.Module):
                  activation=nn.ReLU(), 
                  device=torch.device("cuda" if torch.cuda.is_available() else "cpu")):
         super(Task_Graph_Encoder, self).__init__()
-        self.linear1 = nn.Linear(in_features=in_feats, out_features=hidden_dims[0])
+        self.linear1 = nn.Linear(in_features=in_feats, out_features=hidden_dims[0], bias=False)
         self.batchnorm1 = nn.LayerNorm(hidden_dims[0], elementwise_affine=True)#nn.BatchNorm1d(hidden_dims[0], affine=True)
 
         self.caps1 = Primary_Capsule(input_dim=hidden_dims[0], 

@@ -120,9 +120,10 @@ class Primary_Capsule(nn.Module):
             L = get_laplacian(data.edge_index)
         outs = []
         X = self.linear(X)
-        X = X**self.p
+        # X = X**self.p
         for idx, net in enumerate(self.nets):
-            outs.append(net(X=X, L=L))
+            X_moments = X**(idx+1)
+            outs.append(net(X=X_moments, L=L))
         output = torch.stack(outs, -1)
         output = torch.flatten(output, start_dim=-2, end_dim=-1) #self.batchnorm(torch.flatten(output, -2, -1))
         return self.activation(output)
@@ -156,9 +157,10 @@ class Secondary_Capsule(nn.Module):
         # X_moments = X*X
         # for _ in range(self.p-2):
         #     X_moments = X_moments*X
-        X_moments = X**self.p
+        # X_moments = X**self.p
         outs = []
         for idx, net in enumerate(self.nets):
+            X_moments = X**(idx+1)
             outs.append(net(X=X_moments, L=L))
         output = torch.stack(outs, -1)
         output = torch.flatten(output, start_dim=-2, end_dim=-1) #self.batchnorm(torch.flatten(output, -2, -1))
